@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+      $(document).ready(function() {
+
+        // form submit proc
+        $('#my-form').submit(function(event){
+          //var jdata = JSON.stringify($("#my-form").serializeObject());
+          var jsonObj = $("#my-form").serializeObject();
+          jsonObj.database = $("#db-select").val();
+          var jdata = JSON.stringify(jsonObj);
+          //alert($("#db-select").val());
+          //alert(jdata);
+
+          var url = $(location).attr('pathname') + $("#my-form").attr("action");          
+          //alert(url);
+
+          $.ajax({
+            type: "POST",
+            url: url,
+            data: jdata,
+            success: function(){
+              console.log(result);
+            },
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            error: function(xhr, resp, text) {
+              console.log(xhr, resp, text);
+            }
+          });
+
+          event.preventDefault();
+          //$(location).attr('href', '/select')
+
+          setTimeout( function() {
+            window.location.reload();
+          }, 3000);          
+        });
+
+
+        $('#select-form').submit(function(event){
+          $('#select-form').attr("action", $(location).attr('pathname'));
+          //alert($('#select-form').attr("action"));
+        });
+
+        // multi select length 
+        $(function () {
+            //alert(parseInt($("#multiSelect1 option").length));
+
+            $("select[name='tables']").css("height", parseInt(22) * 20);
+            $("select[name='selecttables']").css("height", parseInt(22) * 20);
+        });
+
+      });
+
+      // form post 요청 json object serialize
+      $.fn.serializeObject = function () {
+        "use strict";
+        var result = {};
+        var extend = function (i, element) {
+            var node = result[element.name];
+            if ('undefined' !== typeof node && node !== null) {
+              if ($.isArray(node)) {
+                  node.push(element.value);
+              } else {
+                  result[element.name] = [node, element.value];
+              }
+            } else {
+                result[element.name] = element.value;
+            }
+        };
+    
+        $.each(this.serializeArray(), extend);
+        return result;
+      };
+
+      function onSelect(select){
+        $('#db-select-form').attr("action", $(location).attr('pathname'));
+
+        //alert($('#db-select-form').attr("action"));
+        $('#db-select-form').submit();
+       }
+
+      function onClick() {
+        $("#multiSelect2 option:selected").remove();
+      }
+
+      function onDeleteFiles() {
+
+        //alert($(location).attr('href'));
+
+        $.ajax({
+            type: "POST",
+            url: $(location).attr('href') + "/deletefiles",
+            success: function(){
+              console.log(result);
+            },
+            contentType: "text/html",
+            error: function(xhr, resp, text) {
+              console.log(xhr, resp, text);
+            }
+          });
+
+        window.location.reload();
+      }
+    </script>
+  </head>
+  <body>
+    {{template "content" .}}
+  </body>
+</html>
