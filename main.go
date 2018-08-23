@@ -6,12 +6,14 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"merge"
 	"net/http"
 	"os"
 	"path/filepath"
 	"process"
+	"strings"
 	"sync"
 	"time"
 
@@ -43,6 +45,7 @@ type Context struct {
 	SelectDB  string
 	Selected  []string
 	Files     []string
+	DBVer     string
 }
 
 func render(w http.ResponseWriter, tmpl string, context Context) {
@@ -59,7 +62,8 @@ func render(w http.ResponseWriter, tmpl string, context Context) {
 }
 
 func dump(tables []string, config *Config, database string) error {
-	log.Println(config)
+	log.Printf("%v\r\n", config)
+	log.Printf("%v\r\n", tables)
 
 	messageChan := make(chan string)
 	var wg sync.WaitGroup
@@ -111,7 +115,7 @@ func dump(tables []string, config *Config, database string) error {
 
 	go func() {
 		for msg := range messageChan {
-			log.Println(msg)
+			log.Printf("%s\r\n", msg)
 		}
 	}()
 
@@ -135,150 +139,52 @@ func dump(tables []string, config *Config, database string) error {
 }
 
 // Index ...
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func Index(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	v := r.URL.Query()
+	// url path
+	path := r.URL.Path
+	dbver := strings.Split(path, "/")[1]
+	log.Printf("%s\r\n", path)
 	//fmt.Println(v["selecttables"])
 	//fmt.Println(v["database"])
 
+	//fmt.Println(strings.Split(path, "/"))
+	//fmt.Println(path + "/files")
 	var files []string
-	filepath.Walk("./files", func(path string, info os.FileInfo, err error) error {
+	filepath.Walk("."+path+"/files", func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Println(err)
+		}
 		if false == info.IsDir() {
-			_, name := filepath.Split(path)
+			_, name := filepath.Split(p)
 			files = append(files, name)
 		}
+
 		return nil
 	})
 
 	if len(v["database"]) == 0 {
-		v["database"] = append(v["database"], "doz3_global_"+gconfig.DbVer)
+		v["database"] = append(v["database"], "doz3_global_"+dbver)
 	}
 
 	context := Context{
 		Title: "Table Dumper!",
 		Databases: []Database{
 			{
-				Database: "doz3_global_" + gconfig.DbVer,
-				Tables: []string{
-					"iu_achiv_table",
-					"iu_boss_default",
-					"iu_boss_info",
-					"iu_common_systems",
-					"iu_daily_reward_data",
-					"iu_default_skill",
-					"iu_drop_box",
-					"iu_dropgroup",
-					"iu_event_daily_reward_data",
-					"iu_event_dungeon_table",
-					"iu_gacha_data",
-					"iu_gather_event_data",
-					"iu_global_settings",
-					"iu_item_data",
-					"iu_item_option_type",
-					"iu_product",
-					"iu_product_bonus",
-					"iu_product_iap",
-					"iu_product_ingame",
-					"iu_product_mystery_shop",
-					"iu_web_event_mission",
-					"iu_web_event_page",
-					"iu_web_event_select",
-					"iu_web_event_select_reward",
-				}},
+				Database: "doz3_global_" + dbver,
+				Tables:   gtables.Global},
 			{
-				Database: "doz3_user_" + gconfig.DbVer + "_1",
-				Tables: []string{
-					"iu_achiv",
-					"iu_artifact",
-					"iu_char_info",
-					"iu_daily_reward",
-					"iu_guild",
-					"iu_guild_member",
-					"iu_iap_log",
-					"iu_inven_class",
-					"iu_inven_option",
-					"iu_inven_stack",
-					"iu_mystery_shop",
-					"iu_post",
-					"iu_product_count",
-					"iu_rune",
-					"iu_seq_quest",
-					"iu_skill_class",
-					"iu_smithy",
-					"iu_special_box_count",
-					"iu_special_products",
-					"iu_stage_single",
-					"iu_user_info",
-					"iu_web_event_bingo_progress",
-					"iu_web_event_roulette_progress",
-					"iu_web_event_select_progress",
-				}},
+				Database: "doz3_user_" + dbver + "_1",
+				Tables:   gtables.User},
 			{
-				Database: "doz3_user_" + gconfig.DbVer + "_2",
-				Tables: []string{
-					"iu_achiv",
-					"iu_artifact",
-					"iu_char_info",
-					"iu_daily_reward",
-					"iu_guild",
-					"iu_guild_member",
-					"iu_iap_log",
-					"iu_inven_class",
-					"iu_inven_option",
-					"iu_inven_stack",
-					"iu_mystery_shop",
-					"iu_post",
-					"iu_product_count",
-					"iu_rune",
-					"iu_seq_quest",
-					"iu_skill_class",
-					"iu_smithy",
-					"iu_special_box_count",
-					"iu_special_products",
-					"iu_stage_single",
-					"iu_user_info",
-					"iu_web_event_bingo_progress",
-					"iu_web_event_roulette_progress",
-					"iu_web_event_select_progress",
-				}},
+				Database: "doz3_user_" + dbver + "_2",
+				Tables:   gtables.User},
 			{
-				Database: "doz3_log_" + gconfig.DbVer,
-				Tables: []string{
-					"achiv_reward_logs",
-					"action_logs",
-					"bossraid_logs",
-					"char_equip_snapshot_logs",
-					"char_levelup_logs",
-					"char_simple_snapshot_logs",
-					"event_bingo_progress_logs",
-					"event_quest_reward_logs",
-					"event_roulette_progress_logs",
-					"event_select_progress_logs",
-					"hack_logs",
-					"iap_buy_logs",
-					"iap_error_logs",
-					"immortalraid_logs",
-					"inventory_expand_logs",
-					"item_create_non_stackable_logs",
-					"item_delete_non_stackable_logs",
-					"item_dyeing_logs",
-					"item_option_change_logs",
-					"item_option_create_logs",
-					"item_option_delete_logs",
-					"item_stackable_logs",
-					"log_character_connect",
-					"log_connect",
-					"post_receive_logs",
-					"post_send_logs",
-					"product_buy_logs",
-					"product_mystery_shop_logs",
-					"pvp_ai_logs",
-					"pvp_logs",
-					"skill_logs",
-					"stage_logs",
-					"vip_levelup_logs",
-				}},
+				Database: "doz3_log_" + dbver,
+				Tables:   gtables.Log},
 		},
 		SelectDB: v["database"][0],
+		DBVer:    dbver,
 		Selected: v["selecttables"],
 		Files:    files,
 	}
@@ -288,42 +194,19 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // Dump ...
 func Dump(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	decoder := json.NewDecoder(r.Body)
-
-	var dumpConfig struct {
-		Database string   `json:"database"`
-		Tables   []string `json:"tables"`
-	}
-
-	err := decoder.Decode(&dumpConfig)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	err = dump(dumpConfig.Tables, gconfig, dumpConfig.Database)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	// Result info
-	type Result struct {
-		ResultCode string `json:"resultcode"`
-	}
-	result := Result{"0"}
-	json.NewEncoder(w).Encode(result)
-}
-
-// Select ...
-func Select(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	decoder := json.NewDecoder(r.Body)
 	//fmt.Println(r.Body)
+	path := r.URL.Path
+	dbver := strings.Split(path, "/")[1]
+	log.Printf("dbver: %s\r\n", dbver)
 
+	var conf = &Config{}
+
+	for _, c := range gconfs.Configs {
+		if c.DbVer == dbver {
+			conf = &c
+			break
+		}
+	}
 	var dumpData struct {
 		Database string   `json:"database"`
 		Tables   []string `json:"tables"`
@@ -331,15 +214,24 @@ func Select(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	err := decoder.Decode(&dumpData)
 	if err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), 400)
 		return
 	}
 
 	//fmt.Println(dumpData)
-	err = dump(dumpData.Tables, gconfig, dumpData.Database)
+	err = dump(dumpData.Tables, conf, dumpData.Database)
 	if err == nil {
-		log.Println("Redirect")
-		http.Redirect(w, r, "/"+gconfig.DbVer, http.StatusMovedPermanently)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+
+		// Result info
+		type Result struct {
+			ResultCode string `json:"resultcode"`
+		}
+		result := Result{"0"}
+		json.NewEncoder(w).Encode(result)
+
 	} else {
 		log.Println(err)
 		http.Error(w, err.Error(), 400)
@@ -347,46 +239,93 @@ func Select(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 }
 
-// DeleteFiles
+// DeleteFiles ...
 func DeleteFiles(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-	files, _ := filepath.Glob("./files/*")
-	for _, path := range files {
-		err := os.Remove(path)
+	path := r.URL.Path
+	dbver := strings.Split(path, "/")[1]
+	log.Printf("%s\r\n", strings.Split(path, "/"))
+
+	files, _ := filepath.Glob("./" + dbver + "/files/*")
+	for _, p := range files {
+		err := os.Remove(p)
 		if err != nil {
 			http.Error(w, err.Error(), 400)
 			return
 		}
 	}
 
-	log.Println("Redirect")
-	http.Redirect(w, r, "/"+gconfig.DbVer, http.StatusMovedPermanently)
+	log.Printf("Redirect\r\n")
+	http.Redirect(w, r, "/"+dbver, http.StatusMovedPermanently)
 }
 
 var gconfig = &Config{}
 
+// DBConfig ...
+type DBConfig struct {
+	Configs []Config `yaml:"conf"`
+}
+
+// Table ...
+type Table struct {
+	Global []string `yaml:"global"`
+	User   []string `yaml:"user"`
+	Log    []string `yaml:"log"`
+}
+
+// yaml
+var gconfs = &DBConfig{}
+var gtables = &Table{}
+
 func main() {
+
+	logfile := "log/log_" + time.Now().Format("2006_01_02_15") + ".txt"
+	fileLog, err := os.OpenFile(logfile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+	defer fileLog.Close()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	mutiWriter := io.MultiWriter(fileLog, os.Stdout)
+	log.SetOutput(mutiWriter)
 
 	port := flag.String("p", "8080", "p=8080")
 	flag.Parse() // 명령줄 옵션의 내용을 각 자료형별
 
-	log.Println("Start Query Dump !!!" + *port)
+	log.Printf("Start Query Dump !!!(%s) \r\n", *port)
 
 	//config := readConfig()
-	err := bluecore.ReadJSON(gconfig, "conf.json")
+	// err := bluecore.ReadJSON(gconfig, "conf.json")
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+	// log.Println(gconfig)
+
+	err = bluecore.ReadYAML(gconfs, "conf/conf.yaml")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	log.Println(gconfig)
+	//log.Println(gconfs)
+
+	err = bluecore.ReadYAML(gtables, "conf/tables.yaml")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	//log.Println(gtables)
 
 	// start routing
 	router := httprouter.New()
-	router.GET("/"+gconfig.DbVer, Index)
-	router.POST("/"+gconfig.DbVer+"/dump", Dump)
-	router.POST("/"+gconfig.DbVer+"/select", Select)
-	router.POST("/"+gconfig.DbVer+"/deletefiles", DeleteFiles)
-	router.ServeFiles("/"+gconfig.DbVer+"/files/*filepath", http.Dir("files"))
+
+	for _, conf := range gconfs.Configs {
+		log.Printf("/%s\r\n", conf.DbVer)
+		router.GET("/"+conf.DbVer, Index)
+		router.POST("/"+conf.DbVer+"/dump", Dump)
+		router.POST("/"+conf.DbVer+"/deletefiles", DeleteFiles)
+		router.ServeFiles("/"+conf.DbVer+"/files/*filepath", http.Dir(conf.DbVer+"/files"))
+	}
 
 	log.Fatal(http.ListenAndServe(":"+*port, router))
 }

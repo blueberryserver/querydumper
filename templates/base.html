@@ -14,11 +14,14 @@
           //var jdata = JSON.stringify($("#my-form").serializeObject());
           var jsonObj = $("#my-form").serializeObject();
           jsonObj.database = $("#db-select").val();
+          if($.isArray(jsonObj.tables) == false) {
+            jsonObj.tables = [jsonObj.tables];
+          }
           var jdata = JSON.stringify(jsonObj);
           //alert($("#db-select").val());
           //alert(jdata);
 
-          var url = $(location).attr('pathname') + $("#my-form").attr("action");          
+          var url = $(location).attr('pathname') + $("#my-form").attr("action");
           //alert(url);
 
           $.ajax({
@@ -45,6 +48,11 @@
 
 
         $('#select-form').submit(function(event){
+          var addurl = "?database=" + $("#db-select").val();
+          //alert($(location).attr("href"));
+          var input = $("<input>").attr("type", "hidden").attr("name", "database").val($("#db-select").val());
+          $('#select-form').append($(input));
+
           $('#select-form').attr("action", $(location).attr('pathname'));
           //alert($('#select-form').attr("action"));
         });
@@ -92,12 +100,11 @@
       }
 
       function onDeleteFiles() {
-
-        //alert($(location).attr('href'));
+        //alert($(location).attr('pathname'));
 
         $.ajax({
             type: "POST",
-            url: $(location).attr('href') + "/deletefiles",
+            url: $(location).attr('pathname') + "/deletefiles",
             success: function(){
               console.log(result);
             },
