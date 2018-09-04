@@ -6,119 +6,27 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <script>
-      $(document).ready(function() {
-
-        // form submit proc
-        $('#my-form').submit(function(event){
-          //var jdata = JSON.stringify($("#my-form").serializeObject());
-          var jsonObj = $("#my-form").serializeObject();
-          jsonObj.database = $("#db-select").val();
-          if($.isArray(jsonObj.tables) == false) {
-            jsonObj.tables = [jsonObj.tables];
-          }
-          var jdata = JSON.stringify(jsonObj);
-          //alert($("#db-select").val());
-          //alert(jdata);
-
-          var url = $(location).attr('pathname') + $("#my-form").attr("action");
-          //alert(url);
-
-          $.ajax({
-            type: "POST",
-            url: url,
-            data: jdata,
-            success: function(){
-              console.log(result);
-            },
-            dataType: "json",
-            contentType: "application/json; charset=utf-8",
-            error: function(xhr, resp, text) {
-              console.log(xhr, resp, text);
-            }
-          });
-
-          event.preventDefault();
-          //$(location).attr('href', '/select')
-
-          setTimeout( function() {
-            window.location.reload();
-          }, 3000);          
-        });
-
-
-        $('#select-form').submit(function(event){
-          var addurl = "?database=" + $("#db-select").val();
-          //alert($(location).attr("href"));
-          var input = $("<input>").attr("type", "hidden").attr("name", "database").val($("#db-select").val());
-          $('#select-form').append($(input));
-
-          $('#select-form').attr("action", $(location).attr('pathname'));
-          //alert($('#select-form').attr("action"));
-        });
-
-        // multi select length 
-        $(function () {
-            //alert(parseInt($("#multiSelect1 option").length));
-
-            $("select[name='tables']").css("height", parseInt(22) * 20);
-            $("select[name='selecttables']").css("height", parseInt(22) * 20);
-        });
-
-      });
-
-      // form post 요청 json object serialize
-      $.fn.serializeObject = function () {
-        "use strict";
-        var result = {};
-        var extend = function (i, element) {
-            var node = result[element.name];
-            if ('undefined' !== typeof node && node !== null) {
-              if ($.isArray(node)) {
-                  node.push(element.value);
-              } else {
-                  result[element.name] = [node, element.value];
-              }
-            } else {
-                result[element.name] = element.value;
-            }
-        };
-    
-        $.each(this.serializeArray(), extend);
-        return result;
-      };
-
-      function onSelect(select){
-        $('#db-select-form').attr("action", $(location).attr('pathname'));
-
-        //alert($('#db-select-form').attr("action"));
-        $('#db-select-form').submit();
-       }
-
-      function onClick() {
-        $("#multiSelect2 option:selected").remove();
-      }
-
-      function onDeleteFiles() {
-        //alert($(location).attr('pathname'));
-
-        $.ajax({
-            type: "POST",
-            url: $(location).attr('pathname') + "/deletefiles",
-            success: function(){
-              console.log(result);
-            },
-            contentType: "text/html",
-            error: function(xhr, resp, text) {
-              console.log(xhr, resp, text);
-            }
-          });
-
-        window.location.reload();
-      }
-    </script>
   </head>
   <body>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-3">
+          <h4> Table Dump </h4>
+          <h4>
+            <a href="/trunk/dump"> TRUNK </a> &nbsp;
+            <a href="/ub21/dump"> UB21 </a> &nbsp;
+            <a href="/ub22/dump"> UB22 </a> 
+          </h4>
+        </div>
+        <div class="col-md-3">
+          <h4> DB Copy </h4>
+          <h4>
+            <a href="/trunk/copy"> TRUNK </a> &nbsp;
+            <a href="/ub21/copy"> UB21 </a> &nbsp;
+            <a href="/ub22/copy"> UB22 </a> 
+          </h4>
+        </div>
+    </div>
     {{template "content" .}}
   </body>
 </html>

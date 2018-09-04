@@ -1,0 +1,178 @@
+{{ define "content" }}
+  <script>
+    $(document).ready(function() {
+
+      // form submit proc
+      $('#my-form').submit(function(event){
+        //var jdata = JSON.stringify($("#my-form").serializeObject());
+        var jsonObj = $("#my-form").serializeObject();
+        jsonObj.database = $("#db-select").val();
+        if($.isArray(jsonObj.tables) == false) {
+          jsonObj.tables = [jsonObj.tables];
+        }
+        var jdata = JSON.stringify(jsonObj);
+        //alert($("#db-select").val());
+        //alert(jdata);
+
+        var url = $(location).attr('pathname') + $("#my-form").attr("action");
+        //alert(url);
+
+        $.ajax({
+          type: "POST",
+          url: url,
+          data: jdata,
+          success: function(){
+            console.log(result);
+          },
+          dataType: "json",
+          contentType: "application/json; charset=utf-8",
+          error: function(xhr, resp, text) {
+            console.log(xhr, resp, text);
+          }
+        });
+
+        event.preventDefault();
+        //$(location).attr('href', '/select')
+
+        setTimeout( function() {
+          window.location.reload();
+        }, 3000);          
+      });
+
+
+      $('#select-form').submit(function(event){
+        var addurl = "?database=" + $("#db-select").val();
+        //alert($(location).attr("href"));
+        var input = $("<input>").attr("type", "hidden").attr("name", "database").val($("#db-select").val());
+        $('#select-form').append($(input));
+
+        $('#select-form').attr("action", $(location).attr('pathname'));
+        //alert($('#select-form').attr("action"));
+      });
+
+      // multi select length 
+      $(function () {
+          //alert(parseInt($("#multiSelect1 option").length));
+
+          $("select[name='tables']").css("height", parseInt(22) * 20);
+          $("select[name='selecttables']").css("height", parseInt(22) * 20);
+      });
+
+    });
+
+    // form post 요청 json object serialize
+    $.fn.serializeObject = function () {
+      "use strict";
+      var result = {};
+      var extend = function (i, element) {
+          var node = result[element.name];
+          if ('undefined' !== typeof node && node !== null) {
+            if ($.isArray(node)) {
+                node.push(element.value);
+            } else {
+                result[element.name] = [node, element.value];
+            }
+          } else {
+              result[element.name] = element.value;
+          }
+      };
+  
+      $.each(this.serializeArray(), extend);
+      return result;
+    };
+
+    function onSelect(select){
+      $('#db-select-form').attr("action", $(location).attr('pathname'));
+
+      //alert($('#db-select-form').attr("action"));
+      $('#db-select-form').submit();
+     }
+
+    function onClick() {
+      $("#multiSelect2 option:selected").remove();
+    }
+
+    function onDeleteFiles() {
+      //alert($(location).attr('pathname'));
+
+      $.ajax({
+          type: "POST",
+          url: $(location).attr('pathname') + "/delete",
+          success: function(){
+            console.log(result);
+          },
+          contentType: "text/html",
+          error: function(xhr, resp, text) {
+            console.log(xhr, resp, text);
+          }
+        });
+
+      window.location.reload();
+    }
+  </script>
+
+  <div class="page-header">
+    <h1>{{ .Title }}</h1>
+  </div>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-2">
+        <form id="db-select-form" enctype='application/json' class="form-inline" action="/">
+          <select id='db-select' name='database' onchange="onSelect(this.selectedIndex)" class="form-control" style="width: 100%" >
+              {{ $selectdb := .SelectDB }}
+              {{ range $key, $value := .Databases }}
+                <option value={{ $value.Database }} {{ if eq $selectdb $value.Database }} selected=true {{ end }}>{{ $value.Database }}</option>
+              {{ end }}
+          </select>
+        </form>
+      </div>
+
+      <div class="col-md-3">
+        <form id="select-form" class="form-inline" action="/">
+          <select id="multiSelect1" name='selecttables' class="form-control" multiple="multiple" style="width: 50%" >
+            {{ $selectdb := .SelectDB }}
+            {{ range $key, $value := .Databases}}
+              {{ if eq $selectdb $value.Database }}
+
+                {{ range $key2, $value2 := $value.Tables}}
+                <option value={{ $value2 }}>{{ $value2 }}</option>
+                {{ end }}
+              {{ end }}
+            {{ end }}
+          </select>
+          <button class="btn btn-danger" type="submit">선택</button>
+        </form>
+      </div>
+
+      <div class="col-md-3">
+        <form id="my-form" enctype='application/json' class="form-inline" action="/exec" method="post">
+          <select id="multiSelect2" name='tables' class="form-control" multiple="multiple" style="width: 50%" >
+            {{ range $key, $value := .Selected}}
+            <option selected=true value={{ $value }}>{{ $value }}</option>
+            {{ end }}
+          </select>
+          <button id="delete-btn" class="btn btn-danger" type="reset" onclick="onClick()" >지우기</button>
+          <button class="btn btn-danger" type="submit">덤프</button>
+        </form>
+      </div>
+
+      <div class="col-md-4">
+          <table class="table table-hover">
+            <tr>
+              <th> FileName </th>
+              <th><a class="btn btn-danger" type="button" onclick="onDeleteFiles()" >Clear</button></th>
+            </tr>
+            {{ $dbver := .DBVer }}
+            {{ range $key, $value := .Files}}
+              <tr>
+                <td>{{ $value }}</td>
+                {{ $downloadUrl := (printf "%s/dump/files/%s" $dbver $value) }}
+                <td><a class="btn btn-danger" href={{ $downloadUrl }} type="button" download={{ $downloadUrl }} >Download</button></td>
+              </tr>
+            {{ end }}
+          </table>
+        </div>
+    </div>    
+  </div>
+      
+{{ end }}
